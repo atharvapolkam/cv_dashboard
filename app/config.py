@@ -86,9 +86,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    s = Settings()
-    s.sessions_dir.mkdir(parents=True, exist_ok=True)
-    return s
+    return Settings()
 
 
 settings = get_settings()
