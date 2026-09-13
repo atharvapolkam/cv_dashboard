@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CV Dashboard — OpenCV testing lab</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">CV<span>DASH</span></div>
+  <label class="btn primary" for="file">Upload frame</label>
+  <input id="file" type="file" accept="image/*" hidden>
+  <div class="srch"><input id="search" placeholder="Search OpenCV functions…  (resize, hsv, contour, roi)" autocomplete="off"><div id="results" class="results"></div></div>
+  <div class="spacer"></div>
+  <button class="btn" id="undo" title="Undo (Ctrl+Z)">↶</button>
+  <button class="btn" id="redo" title="Redo (Ctrl+Y)">↷</button>
+  <button class="btn" id="reset">Reset</button>
+  <span class="meta">OpenCV {{ cv_version }} · {{ op_count }} ops</span>
+</header>
+
+<main class="grid">
+  <!-- LEFT ------------------------------------------------------------ -->
+  <aside class="col left">
+    <section class="card">
+      <h3>Quick test</h3>
+      <div id="quick" class="quick"></div>
+    </section>
+    <section class="card">
+      <h3>⭐ Favourites</h3><div id="favs" class="chips empty-hint">Click ☆ on any operation.</div>
+    </section>
+    <section class="card">
+      <h3>Recently used</h3><div id="recents" class="chips empty-hint">Nothing yet.</div>
+    </section>
+    <section class="card">
+      <h3>CV pipeline presets</h3><div id="pipelines" class="stack"></div>
+    </section>
+    <section class="card">
+      <h3>All operations</h3><div id="cats" class="stack"></div>
+    </section>
+  </aside>
+
+  <!-- CENTER ---------------------------------------------------------- -->
+  <section class="col center">
+    <div class="card canvas-card">
+      <div class="toolbar">
+        <div class="seg" id="roitools">
+          <button data-tool="none" class="on">Pan</button><button data-tool="rect">Rect</button>
+          <button data-tool="poly">Polygon</button><button data-tool="line">Line</button>
+          <button data-tool="circle">Circle</button><button data-tool="pick">Pixel</button>
+        </div>
+        <button class="btn sm" id="finishPoly">Finish polygon</button>
+        <button class="btn sm" id="clearRoi">Clear ROI</button>
+        <div class="spacer"></div>
+        <label class="chk"><input type="checkbox" id="showOrig"> Compare with source</label>
+        <span class="meta" id="cursorPos">—</span>
+      </div>
+      <div class="stage" id="stage">
+        <img id="view" alt="" draggable="false">
+        <canvas id="overlay"></canvas>
+        <div class="drop" id="drop">Drop a camera frame here, or click <b>Upload frame</b></div>
+      </div>
+      <div id="extras" class="extras"></div>
+    </div>
+
+    <div class="card" id="paramCard" hidden>
+      <div class="row"><h3 id="opTitle">—</h3><code id="opCv" class="tag"></code>
+        <span id="opCost" class="tag"></span><div class="spacer"></div>
+        <button class="btn sm" id="favBtn">☆</button>
+        <button class="btn sm" id="cmpBtn">A/B compare</button>
+        <button class="btn primary sm" id="applyBtn">Apply</button></div>
+      <p class="meta" id="opSummary"></p>
+      <div id="params" class="params"></div>
+      <div id="cmpWrap" hidden class="cmp"></div>
+    </div>
+  </section>
+
+  <!-- RIGHT ----------------------------------------------------------- -->
+  <aside class="col right">
+    <section class="card">
+      <h3>Image inspection</h3>
+      <div id="inspect" class="kv"><span class="empty-hint">Upload an image.</span></div>
+    </section>
+    <section class="card">
+      <h3>What happened?</h3>
+      <div id="what" class="kv"><span class="empty-hint">Run an operation.</span></div>
+      <div id="notes"></div>
+    </section>
+    <section class="card">
+      <h3>ROI / coordinates</h3>
+      <div class="row wrap" id="roiActions">
+        <button class="btn sm" data-copy="pixel_list">Copy Python list</button>
+        <button class="btn sm" data-copy="normalized_list">Copy normalised</button>
+        <button class="btn sm" data-copy="numpy">Copy np.array</button>
+        <button class="btn sm" data-copy="mask">Copy fillPoly mask</button>
+        <button class="btn sm" data-copy="json">Copy JSON</button>
+        <button class="btn sm" id="roiCrop">Send to crop</button>
+        <button class="btn sm" id="roiMask">Apply as mask</button>
+      </div>
+      <div id="roiInfo" class="kv"><span class="empty-hint">Draw a rect, polygon, line or circle.</span></div>
+      <pre id="roiCode" class="code"></pre>
+    </section>
+    <section class="card">
+      <h3>Coordinate converter</h3>
+      <div class="row tight">
+        <input id="ccx" class="in" type="number" placeholder="pixel x">
+        <input id="ccy" class="in" type="number" placeholder="pixel y">
+        <button class="btn sm" id="toNorm">→ norm</button>
+      </div>
+      <div class="row tight">
+        <input id="ccnx" class="in" type="number" step="0.000001" placeholder="norm x">
+        <input id="ccny" class="in" type="number" step="0.000001" placeholder="norm y">
+        <button class="btn sm" id="toPix">→ pixel</button>
+      </div>
+      <pre id="ccOut" class="code">—</pre>
+    </section>
+    <section class="card">
+      <h3>Pixel inspector</h3>
+      <div id="pixel" class="kv"><span class="empty-hint">Pick the “Pixel” tool and click.</span></div>
+      <div id="patch" class="patch"></div>
+    </section>
+    <section class="card collapsible">
+      <h3 class="fold">Performance <span class="caret">▾</span></h3>
+      <div class="foldable"><div id="perf" class="kv"><span class="empty-hint">—</span></div></div>
+    </section>
+    <section class="card collapsible">
+      <h3 class="fold">History <span class="caret">▾</span></h3>
+      <div class="foldable"><ol id="history" class="hist"></ol></div>
+    </section>
+    <section class="card">
+      <h3>Generated Python <button class="btn sm" id="copyCode">Copy</button>
+        <button class="btn sm" id="dlCode">.py</button>
+        <button class="btn sm" id="dlImg">.png</button>
+        <button class="btn sm" id="dlJson">.json</button></h3>
+      <pre id="code" class="code big">import cv2</pre>
+    </section>
+  </aside>
+</main>
+<div id="toasts" class="toasts"></div>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
